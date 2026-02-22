@@ -11,6 +11,7 @@ import { apiClient } from '@/utils/api'
 import { getUserLocation } from '@/utils/location'
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder'
 import { sanitizeText } from '@/utils/textUtils'
+import { API_BASE } from '@/config/api'
 
 export interface Message {
   id: string
@@ -83,9 +84,6 @@ export default function ChatWindow({ currentLanguage }: ChatWindowProps) {
       const shownAt = transcriptShownAtRef.current ?? Date.now()
       const elapsed = Date.now() - shownAt
       const delay = Math.max(1000 - elapsed, 0)
-      console.log(
-        `[ChatWindow] 🔊 scheduleAudioPlayback: elapsed=${elapsed}ms, delay=${delay}ms`
-      )
       if (delay === 0) {
         setAudioUrl(url)
       } else {
@@ -201,18 +199,21 @@ export default function ChatWindow({ currentLanguage }: ChatWindowProps) {
 
   /**
    * AUDIO_URL — hold the URL and schedule delayed playback.
+   * Enforce HTTPS in production (browsers block mixed content).
    */
   const handleVoiceAudioUrl = useCallback(
     (url: string, _language: string) => {
-      pendingAudioUrlRef.current = url
-      scheduleAudioPlayback(url)
+      const safeUrl =
+        typeof window !== 'undefined' && window.location.protocol === 'https:'
+          ? url.replace(/^http:\/\//i, 'https://')
+          : url
+      pendingAudioUrlRef.current = safeUrl
+      scheduleAudioPlayback(safeUrl)
     },
     [scheduleAudioPlayback]
   )
 
   const handleVoiceError = useCallback((error: string) => {
-    console.error('[ChatWindow] 🔴 Voice error:', error)
-    // Reset streaming refs on error
     streamingMsgIdRef.current = null
     transcriptShownAtRef.current = null
     pendingAudioUrlRef.current = null
@@ -234,7 +235,7 @@ export default function ChatWindow({ currentLanguage }: ChatWindowProps) {
 
   // Voice recording integration
   const voiceRecorder = useVoiceRecorder({
-    apiUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+    apiUrl: API_BASE,
     uiLanguage: currentLanguage,
     location: undefined,
     onTranscript: handleVoiceTranscript,
@@ -308,7 +309,7 @@ export default function ChatWindow({ currentLanguage }: ChatWindowProps) {
         status: 'final',
       }
       setMessages((prev) => [...prev, agentMessage])
-    } catch (error) {
+    } catch {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: '⚠️ Sorry, I could not process your request. Please try again.',
@@ -316,14 +317,12 @@ export default function ChatWindow({ currentLanguage }: ChatWindowProps) {
         timestamp: new Date(),
       }
       setMessages((prev) => [...prev, errorMessage])
-      console.error('Chat error:', error)
     } finally {
       setIsLoading(false)
     }
   }
 
   const handleVoiceButtonClick = async () => {
-    console.log('[ChatWindow] 🎤 Voice button clicked, current state:', voiceRecorder.state)
     try {
       if (voiceRecorder.state === 'idle') {
         // Reset refs for new voice interaction
@@ -332,16 +331,11 @@ export default function ChatWindow({ currentLanguage }: ChatWindowProps) {
         pendingAudioUrlRef.current = null
         clearAudioDelayTimer()
 
-        console.log('[ChatWindow] ▶️ Starting recording...')
         await voiceRecorder.startRecording()
       } else if (voiceRecorder.state === 'recording') {
-        console.log('[ChatWindow] ⏹️ Stopping recording...')
         await voiceRecorder.stopRecording()
-      } else {
-        console.log('[ChatWindow] ⏭️ Button clicked but state is:', voiceRecorder.state, '— ignoring')
       }
     } catch (err) {
-      console.error('[ChatWindow] 🔴 Voice button click error:', err)
       handleVoiceError(err instanceof Error ? err.message : String(err))
     }
   }
@@ -418,7 +412,7 @@ export default function ChatWindow({ currentLanguage }: ChatWindowProps) {
       <AudioPlayer
         audioUrl={audioUrl}
         onPlayEnd={handleAudioPlayEnd}
-        onError={(err) => console.error('Audio playback error:', err)}
+        onError={() => {}}
       />
     </div>
   )

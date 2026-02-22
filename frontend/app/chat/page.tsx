@@ -5,18 +5,40 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import ChatWindow from '@/components/ChatWindow'
 import LanguageSelector from '@/components/LanguageSelector'
+import ConnectionIndicator from '@/components/ConnectionIndicator'
 import { supportedLanguages, Language } from '@/utils/languages'
+import { API_BASE } from '@/config/api'
+import type { ConnectionStatus } from '@/utils/voiceWebSocket'
 
 export default function ChatPage() {
   const [currentLanguage, setCurrentLanguage] = useState<Language>('en')
   const [showLanguageSelector, setShowLanguageSelector] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [backendStatus, setBackendStatus] = useState<ConnectionStatus>('connecting')
 
   useEffect(() => {
     setMounted(true)
     const saved = localStorage.getItem('krishi_language') as Language
     if (saved && supportedLanguages[saved]) {
       setCurrentLanguage(saved)
+    }
+
+    // ── Cold-start warm-up (silent, non-blocking) ──
+    if (API_BASE) {
+      setBackendStatus('connecting')
+      fetch(`${API_BASE}/`, { mode: 'cors' })
+        .then((res) => {
+          setBackendStatus(res.ok ? 'connected' : 'offline')
+        })
+        .catch(() => {
+          setBackendStatus('reconnecting')
+          // Retry once after 5s (Render cold start can take 15-30s)
+          setTimeout(() => {
+            fetch(`${API_BASE}/`, { mode: 'cors' })
+              .then((res) => setBackendStatus(res.ok ? 'connected' : 'offline'))
+              .catch(() => setBackendStatus('offline'))
+          }, 5000)
+        })
     }
   }, [])
 
@@ -57,6 +79,7 @@ export default function ChatPage() {
               <p className="text-[10px] text-gray-400 font-medium">कृषि सेतु</p>
             </div>
           </Link>
+          <ConnectionIndicator status={backendStatus} />
         </div>
 
         {/* Right — Language toggle */}

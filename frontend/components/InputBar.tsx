@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, KeyboardEvent } from 'react'
+import { useState, useRef, KeyboardEvent } from 'react'
 import { Language } from '@/utils/languages'
 
 interface InputBarProps {
@@ -12,11 +12,15 @@ interface InputBarProps {
 export default function InputBar({ onSendMessage, disabled, language }: InputBarProps) {
   const [message, setMessage] = useState('')
   const [isFocused, setIsFocused] = useState(false)
+  const sendingRef = useRef(false)
 
   const handleSend = () => {
-    if (message.trim() && !disabled) {
+    if (message.trim() && !disabled && !sendingRef.current) {
+      sendingRef.current = true
       onSendMessage(message.trim())
       setMessage('')
+      // Debounce: prevent rapid double-sends
+      setTimeout(() => { sendingRef.current = false }, 300)
     }
   }
 

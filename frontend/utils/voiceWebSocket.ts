@@ -5,6 +5,7 @@
 
 import { Language } from './languages'
 import { LocationCoordinates } from './location'
+import { WS_BASE } from '@/config/api'
 
 export interface VoiceMessage {
   type: 'transcript' | 'stream_chunk' | 'stream_end' | 'audio_url' | 'error' | 'pong'
@@ -14,6 +15,8 @@ export interface VoiceMessage {
   message?: string
 }
 
+export type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'offline'
+
 export interface VoiceClientCallbacks {
   onTranscript?: (text: string, language: string) => void
   onStreamChunk?: (chunk: string) => void
@@ -22,40 +25,45 @@ export interface VoiceClientCallbacks {
   onError?: (error: string) => void
   onConnect?: () => void
   onDisconnect?: () => void
+  onConnectionStatus?: (status: ConnectionStatus) => void
 }
 
 export class VoiceWebSocketClient {
   private ws: WebSocket | null = null
   private callbacks: VoiceClientCallbacks
   private reconnectAttempts = 0
-  private maxReconnectAttempts = 3
-  private reconnectDelay = 1000
+  private maxReconnectAttempts = 5
+  private reconnectDelay = 2000 // 2 seconds base delay
   private pingInterval: NodeJS.Timeout | null = null
-  private intentionalClose = false // Track if disconnect was intentional
+  private intentionalClose = false
+  private lastApiUrl = ''
 
   constructor(callbacks: VoiceClientCallbacks) {
     this.callbacks = callbacks
   }
 
-  connect(apiUrl: string): Promise<void> {
+  connect(apiUrl?: string): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
-        this.intentionalClose = false // Reset flag
-        
-        // Convert HTTP(S) URL to WS(S) URL
+        this.intentionalClose = false
+
+        // Convert HTTP(S) URL to WS(S) URL, or use central WS_BASE
         const wsUrl = apiUrl
-          .replace('http://', 'ws://')
-          .replace('https://', 'wss://')
-        
+          ? apiUrl.replace('http://', 'ws://').replace('https://', 'wss://')
+          : WS_BASE
+
+        this.lastApiUrl = apiUrl || ''
+
         const voiceWsUrl = `${wsUrl}/api/voice`
-        
-        console.log('Connecting to voice WebSocket:', voiceWsUrl)
+
+        this.callbacks.onConnectionStatus?.('connecting')
+
         this.ws = new WebSocket(voiceWsUrl)
 
         this.ws.onopen = () => {
-          console.log('Voice WebSocket connected')
           this.reconnectAttempts = 0
           this.startPing()
+          this.callbacks.onConnectionStatus?.('connected')
           this.callbacks.onConnect?.()
           resolve()
         }
@@ -64,31 +72,35 @@ export class VoiceWebSocketClient {
           try {
             const data: VoiceMessage = JSON.parse(event.data)
             this.handleMessage(data)
-          } catch (error) {
-            console.error('Error parsing WebSocket message:', error)
+          } catch {
+            // silently ignore malformed frames
           }
         }
 
-        this.ws.onerror = (error) => {
-          console.error('Voice WebSocket error:', error)
+        this.ws.onerror = () => {
           this.callbacks.onError?.('WebSocket connection error')
         }
 
         this.ws.onclose = () => {
-          console.log('Voice WebSocket disconnected')
           this.stopPing()
           this.callbacks.onDisconnect?.()
-          
-          // Only attempt reconnection if it wasn't an intentional disconnect
+
           if (!this.intentionalClose && this.reconnectAttempts < this.maxReconnectAttempts) {
             this.reconnectAttempts++
+            this.callbacks.onConnectionStatus?.('reconnecting')
             setTimeout(() => {
-              console.log(`Reconnection attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts}`)
-              this.connect(apiUrl).catch(console.error)
-            }, this.reconnectDelay * this.reconnectAttempts)
+              this.connect(this.lastApiUrl || undefined).catch(() => {
+                if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+                  this.callbacks.onConnectionStatus?.('offline')
+                }
+              })
+            }, this.reconnectDelay)
+          } else if (!this.intentionalClose) {
+            this.callbacks.onConnectionStatus?.('offline')
           }
         }
       } catch (error) {
+        this.callbacks.onConnectionStatus?.('offline')
         reject(error)
       }
     })
@@ -105,7 +117,6 @@ export class VoiceWebSocketClient {
     location?: LocationCoordinates
   ): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      console.error('WebSocket not connected')
       this.callbacks.onError?.('WebSocket not connected')
       return
     }
@@ -123,10 +134,6 @@ export class VoiceWebSocketClient {
       message.location = location
     }
 
-    console.log(
-      `[Voice] VOICE_CHUNK_SENT: format=${format || 'mp3'}, ` +
-        `size=${audioData.length} b64chars`
-    )
     this.ws.send(JSON.stringify(message))
   }
 
@@ -145,7 +152,6 @@ export class VoiceWebSocketClient {
         break
 
       case 'stream_end':
-        // Don't require BOTH content and language — content alone is enough
         if (message.content) {
           this.callbacks.onStreamEnd?.(message.content, message.language || 'en')
         }
@@ -164,11 +170,10 @@ export class VoiceWebSocketClient {
         break
 
       case 'pong':
-        // Keep-alive response
         break
 
       default:
-        console.warn('Unknown message type:', message.type)
+        break
     }
   }
 

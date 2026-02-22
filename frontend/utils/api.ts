@@ -5,8 +5,9 @@
 import axios, { AxiosInstance } from 'axios'
 import { Language } from './languages'
 import { LocationCoordinates } from './location'
+import { API_BASE } from '@/config/api'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const API_URL = API_BASE
 
 export interface ChatRequest {
   message: string
