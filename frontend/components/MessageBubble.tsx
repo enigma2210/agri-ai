@@ -59,13 +59,13 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
     >
       {/* Agent avatar */}
       {!isUser && (
-        <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary-700 text-white flex items-center justify-center text-xs font-bold mr-2.5 mt-0.5 shadow-sm">
+        <div className="flex-shrink-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-primary-700 text-white flex items-center justify-center text-[10px] sm:text-xs font-bold mr-2 sm:mr-2.5 mt-0.5 shadow-sm">
           🌱
         </div>
       )}
 
       <div
-        className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+        className={`max-w-[85%] sm:max-w-[75%] md:max-w-[65%] rounded-2xl px-3.5 sm:px-4 py-2.5 sm:py-3 ${
           isUser
             ? 'bg-primary-700 text-white rounded-br-sm shadow-glass'
             : 'bg-white text-gray-800 rounded-bl-sm border border-gray-100 shadow-float'
@@ -73,7 +73,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
       >
         {/* Message text */}
         <div
-          className={`text-[15px] leading-relaxed whitespace-pre-wrap break-words ${
+          className={`text-[14px] sm:text-[15px] leading-relaxed whitespace-pre-wrap break-words ${
             isUser ? 'text-white' : 'text-gray-700'
           }`}
         >
@@ -95,7 +95,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
 
       {/* User avatar */}
       {isUser && (
-        <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-xs font-bold ml-2.5 mt-0.5">
+        <div className="flex-shrink-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-[10px] sm:text-xs font-bold ml-2 sm:ml-2.5 mt-0.5">
           <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
           </svg>

@@ -177,7 +177,7 @@ export default function AudioPlayer({
   if (!showPlayer) return null
 
   return (
-    <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 glass border border-white/30 shadow-glass-lg rounded-2xl px-5 py-3 flex items-center gap-3 min-w-[280px] max-w-[360px] animate-slide-up">
+    <div className="glass border border-white/30 shadow-glass-lg rounded-2xl px-4 sm:px-5 py-2.5 sm:py-3 flex items-center gap-2.5 sm:gap-3 w-full max-w-[360px]">
       {/* Play / Pause button */}
       <button
         onClick={handlePlayPause}

@@ -64,6 +64,9 @@ export default function ChatWindow({ currentLanguage }: ChatWindowProps) {
   const audioDelayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
+  /** Track if user has scrolled up (disable auto-scroll) */
+  const isNearBottomRef = useRef(true)
 
   // ── Helpers ──
 
@@ -245,13 +248,41 @@ export default function ChatWindow({ currentLanguage }: ChatWindowProps) {
     onError: handleVoiceError,
   })
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
+  const scrollToBottom = useCallback(() => {
+    if (isNearBottomRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [])
+
+  /** Check if user is near bottom of scroll (within 120px) */
+  const handleScroll = useCallback(() => {
+    const el = messagesContainerRef.current
+    if (!el) return
+    const threshold = 120
+    isNearBottomRef.current =
+      el.scrollHeight - el.scrollTop - el.clientHeight < threshold
+  }, [])
 
   useEffect(() => {
     scrollToBottom()
-  }, [messages])
+  }, [messages, scrollToBottom])
+
+  // ── Viewport resize handler (mobile keyboard) ──
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+
+    const handleResize = () => {
+      // When mobile keyboard opens, visualViewport height shrinks.
+      // Scroll to bottom to keep input visible.
+      requestAnimationFrame(() => {
+        scrollToBottom()
+      })
+    }
+
+    vv.addEventListener('resize', handleResize)
+    return () => vv.removeEventListener('resize', handleResize)
+  }, [scrollToBottom])
 
   // Show welcome message on first load or when language changes
   useEffect(() => {
@@ -368,52 +399,57 @@ export default function ChatWindow({ currentLanguage }: ChatWindowProps) {
   const shouldDisableInput = isLoading || isVoiceActive
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden relative">
+    <div className="flex-1 flex flex-col overflow-hidden relative min-h-0">
       {/* Background mesh */}
       <div className="absolute inset-0 bg-mesh pointer-events-none" />
 
       {/* Messages Container */}
-      <div className="relative flex-1 overflow-y-auto chat-scrollbar px-4 py-6">
-        <div className="max-w-2xl mx-auto space-y-4">
+      <div
+        ref={messagesContainerRef}
+        onScroll={handleScroll}
+        className="relative flex-1 overflow-y-auto chat-scrollbar px-3 sm:px-4 pt-4 pb-2 min-h-0"
+      >
+        <div className="max-w-2xl mx-auto space-y-3 sm:space-y-4">
           {messages.map((message) => (
             <MemoizedMessageBubble key={message.id} message={message} />
           ))}
           {(isLoading || voiceRecorder.state === 'processing') && <LoadingStream />}
           {voiceRecorder.state === 'waiting_audio' && (
-            <div className="flex justify-start">
+            <div className="flex justify-start animate-fade-in">
               <div className="text-xs text-gray-400 italic px-3 py-1 rounded-full bg-white/50 backdrop-blur-sm">
                 Preparing audio…
               </div>
             </div>
           )}
-          <div ref={messagesEndRef} />
+          {/* Audio Player — inline in message flow */}
+          {audioUrl && (
+            <div className="flex justify-start animate-slide-up">
+              <AudioPlayer
+                audioUrl={audioUrl}
+                onPlayEnd={handleAudioPlayEnd}
+                onError={() => {}}
+              />
+            </div>
+          )}
+          <div ref={messagesEndRef} className="h-1" />
         </div>
       </div>
 
-      {/* Input Bar with Voice Button */}
-      <div className="relative flex-shrink-0">
+      {/* Input Bar with integrated Voice Button */}
+      <div className="relative flex-shrink-0 z-20 bg-sand-50/80 backdrop-blur-sm border-t border-gray-100/60 pb-safe">
         <InputBar
           onSendMessage={handleSendMessage}
           disabled={shouldDisableInput}
           language={currentLanguage}
+          voiceButton={
+            <VoiceButton
+              state={voiceRecorder.state}
+              onClick={handleVoiceButtonClick}
+              disabled={isLoading}
+            />
+          }
         />
-
-        {/* Voice Button */}
-        <div className="absolute right-20 sm:right-24 bottom-4">
-          <VoiceButton
-            state={voiceRecorder.state}
-            onClick={handleVoiceButtonClick}
-            disabled={isLoading}
-          />
-        </div>
       </div>
-
-      {/* Audio Player — only renders when we have an audio URL (voice input only) */}
-      <AudioPlayer
-        audioUrl={audioUrl}
-        onPlayEnd={handleAudioPlayEnd}
-        onError={() => {}}
-      />
     </div>
   )
 }

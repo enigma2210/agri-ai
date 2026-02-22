@@ -34,7 +34,7 @@ export default function VoiceButton({
       disabled={isDisabled}
       className={`
         relative flex items-center justify-center
-        w-10 h-10 rounded-xl
+        w-10 h-10 rounded-full
         transition-all duration-300
         focus:outline-none focus:ring-2 focus:ring-offset-2
         ${
@@ -42,7 +42,7 @@ export default function VoiceButton({
             ? 'bg-red-500 hover:bg-red-600 focus:ring-red-400 shadow-lg'
             : isBusy
             ? 'bg-gray-200 cursor-wait text-gray-400'
-            : 'bg-primary-50 text-primary-700 hover:bg-primary-100 focus:ring-primary-400 hover:shadow-sm'
+            : 'bg-primary-50 text-primary-700 hover:bg-primary-100 focus:ring-primary-400 hover:shadow-sm active:scale-95'
         }
         ${isDisabled && !isBusy ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
         ${className}
@@ -97,8 +97,8 @@ export default function VoiceButton({
       {/* Ripple effect for recording */}
       {isRecording && (
         <>
-          <span className="absolute inset-0 rounded-xl bg-red-400 animate-ping opacity-40" />
-          <span className="absolute -inset-1 rounded-2xl border-2 border-red-300 animate-pulse opacity-50" />
+          <span className="absolute inset-0 rounded-full bg-red-400 animate-ping opacity-40" />
+          <span className="absolute -inset-1 rounded-full border-2 border-red-300 animate-pulse opacity-50" />
         </>
       )}
     </button>

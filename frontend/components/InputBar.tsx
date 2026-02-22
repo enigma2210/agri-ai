@@ -1,15 +1,16 @@
 'use client'
 
-import { useState, useRef, KeyboardEvent } from 'react'
+import { useState, useRef, KeyboardEvent, ReactNode } from 'react'
 import { Language } from '@/utils/languages'
 
 interface InputBarProps {
   onSendMessage: (message: string) => void
   disabled?: boolean
   language: Language
+  voiceButton?: ReactNode
 }
 
-export default function InputBar({ onSendMessage, disabled, language }: InputBarProps) {
+export default function InputBar({ onSendMessage, disabled, language, voiceButton }: InputBarProps) {
   const [message, setMessage] = useState('')
   const [isFocused, setIsFocused] = useState(false)
   const sendingRef = useRef(false)
@@ -45,16 +46,16 @@ export default function InputBar({ onSendMessage, disabled, language }: InputBar
   }
 
   return (
-    <div className="px-4 py-3 sm:px-6">
+    <div className="px-3 py-2 sm:px-4 sm:py-3">
       <div
-        className={`max-w-2xl mx-auto flex items-end gap-2 rounded-2xl bg-white border px-3 py-2 transition-all duration-300 ${
+        className={`max-w-2xl mx-auto flex items-end gap-1.5 sm:gap-2 rounded-2xl bg-white border px-2.5 sm:px-3 py-2 transition-all duration-300 ${
           isFocused
             ? 'border-primary-300 shadow-glow ring-1 ring-primary-200/40'
             : 'border-gray-200 shadow-float'
         }`}
       >
         {/* Text Input */}
-        <div className="flex-1 relative">
+        <div className="flex-1 min-w-0">
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
@@ -64,22 +65,29 @@ export default function InputBar({ onSendMessage, disabled, language }: InputBar
             placeholder={placeholders[language]}
             disabled={disabled}
             rows={1}
-            className="w-full px-2 py-2 text-[15px] text-gray-800 placeholder-gray-300 resize-none focus:outline-none disabled:bg-transparent disabled:cursor-not-allowed bg-transparent"
+            className="w-full px-1.5 sm:px-2 py-2 text-[15px] leading-snug text-gray-800 placeholder-gray-300 resize-none focus:outline-none disabled:bg-transparent disabled:cursor-not-allowed bg-transparent"
             style={{
               minHeight: '40px',
-              maxHeight: '120px',
+              maxHeight: '100px',
             }}
           />
         </div>
+
+        {/* Voice Button (passed as slot) */}
+        {voiceButton && (
+          <div className="flex-shrink-0">
+            {voiceButton}
+          </div>
+        )}
 
         {/* Send Button */}
         <button
           onClick={handleSend}
           disabled={!message.trim() || disabled}
-          className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 ${
+          className={`flex-shrink-0 w-10 h-10 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all duration-200 ${
             message.trim() && !disabled
               ? 'bg-primary-700 text-white hover:bg-primary-800 shadow-sm active:scale-95'
-              : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+              : 'bg-gray-100 text-gray-300 cursor-not-allowed opacity-60'
           }`}
           aria-label="Send message"
         >
