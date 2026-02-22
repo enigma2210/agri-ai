@@ -8,5 +8,5 @@ python-dotenv==1.0.0
 SpeechRecognition==3.10.4
 pydub==0.25.1
 gTTS==2.5.1
-edge-tts>=6.1.0
+edge-tts==7.2.7
 imageio-ffmpeg==0.6.0

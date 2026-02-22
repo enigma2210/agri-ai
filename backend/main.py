@@ -1,13 +1,14 @@
 """
-Kissan AI Backend - FastAPI Gateway
+Krishi Setu Backend - FastAPI Gateway
 Production-grade multimodal WebSocket proxy for AI Agent
 """
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from contextlib import asynccontextmanager
 import logging
 import json
+import os
 import uuid
 import asyncio
 import base64
@@ -31,15 +32,17 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager"""
-    logger.info("Starting Kissan AI Backend...")
+    logger.info("Starting Krishi Setu Backend...")
+    logger.info(f"PORT={settings.PORT}, AGENT_WS_URL={settings.AGENT_WS_URL[:40]}...")
     yield
-    logger.info("Shutting down Kissan AI Backend...")
+    logger.info("Shutting down Krishi Setu Backend...")
+    cleanup_old_audio()
 
 
 app = FastAPI(
-    title="Kissan AI Backend",
+    title="Krishi Setu Backend",
     description="Production AI Agent Gateway for Indian Farmers",
-    version="1.0.0",
+    version="2.0.0",
     lifespan=lifespan
 )
 
@@ -70,13 +73,23 @@ app.add_middleware(
 )
 
 
+# ── Global exception handler — prevent crashes in production ──
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"error": "Internal Server Error"}
+    )
+
+
 @app.get("/")
 async def root():
-    """Health check endpoint"""
+    """Health check endpoint — used by Render to verify service is alive"""
     return {
-        "service": "Kissan AI Backend",
+        "service": "Krishi Setu Backend",
         "status": "healthy",
-        "version": "1.0.0"
+        "version": "2.0.0"
     }
 
 
@@ -476,7 +489,11 @@ async def voice_websocket(websocket: WebSocket):
                     # ── Step 3: Text-to-Speech ──────────────────────────
                     if response_text:
                         logger.info(f"[VOICE:{tag}] ── TTS start ──")
-                        base_url = f"http://localhost:{settings.PORT}"
+                        # Use PUBLIC_URL env var in production, fall back to localhost
+                        base_url = os.environ.get(
+                            "PUBLIC_URL",
+                            f"http://localhost:{settings.PORT}"
+                        ).rstrip("/")
                         audio_url = await text_to_speech(
                             text=response_text,
                             language=ui_language,
@@ -520,4 +537,15 @@ async def voice_websocket(websocket: WebSocket):
     finally:
         ws_manager.disconnect(connection_id)
         logger.info(f"[VOICE:{tag}] Cleanup complete")
+
+
+# ── Production entrypoint ──────────────────────────────────────────
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 8000)),
+        log_level="info",
+    )
 

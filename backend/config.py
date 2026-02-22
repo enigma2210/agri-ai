@@ -1,5 +1,5 @@
 """
-Configuration management for Kissan AI Backend
+Configuration management for Krishi Setu Backend
 """
 from pydantic_settings import BaseSettings
 from typing import List
@@ -13,12 +13,15 @@ class Settings(BaseSettings):
     WS_TIMEOUT: int = 30
     WS_MAX_RETRIES: int = 3
     
+    # Public URL (set to your Render service URL in production)
+    PUBLIC_URL: str = ""
+    
     # CORS Configuration
     CORS_ORIGINS: List[str] = [
         "http://localhost:3000",
         "http://localhost:8000",
-        "https://kissan.ai",
-        "https://www.kissan.ai"
+        "https://*.onrender.com",
+        "https://*.vercel.app",
     ]
     
     # Server Configuration
