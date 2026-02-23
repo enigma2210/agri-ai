@@ -50,7 +50,7 @@ export default function ChatPage() {
 
   if (!mounted) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-sand-50 bg-mesh" style={{ height: '100dvh' }}>
+      <div className="viewport-lock flex items-center justify-center bg-sand-50 bg-mesh">
         <div className="flex flex-col items-center gap-3">
           <span className="text-4xl animate-float">🌱</span>
           <span className="text-sm font-medium text-primary-700 tracking-wide">
@@ -62,7 +62,7 @@ export default function ChatPage() {
   }
 
   return (
-    <main className="fixed inset-0 flex flex-col bg-sand-50 overflow-hidden" style={{ height: '100dvh' }}>
+    <main className="viewport-lock flex flex-col bg-sand-50">
       {/* ── Header ── */}
       <header className="relative z-30 glass border-b border-white/20 px-4 sm:px-6 h-14 flex items-center justify-between flex-shrink-0 pt-safe">
         {/* Left — Brand */}

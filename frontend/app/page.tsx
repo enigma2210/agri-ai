@@ -74,7 +74,7 @@ export default function LandingPage() {
       </nav>
 
       {/* ── Hero Section ── */}
-      <section className="relative pt-32 pb-20 px-6 overflow-hidden">
+      <section className="relative pt-24 sm:pt-32 pb-14 sm:pb-20 px-4 sm:px-6 overflow-hidden">
         {/* Background mesh */}
         <div className="absolute inset-0 bg-mesh pointer-events-none" />
 
@@ -154,7 +154,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Features Grid ── */}
-      <section id="features" className="max-w-5xl mx-auto px-6 py-20">
+      <section id="features" className="max-w-5xl mx-auto px-4 sm:px-6 py-14 sm:py-20 scroll-mt-16">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -170,7 +170,7 @@ export default function LandingPage() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
           {features.map((f, i) => (
             <motion.div
               key={f.title}
@@ -178,7 +178,7 @@ export default function LandingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.08, duration: 0.5 }}
-              className="group p-6 rounded-2xl bg-white border border-gray-100 hover:border-primary-200 hover:shadow-glass transition-all duration-300 cursor-default"
+              className="group p-5 sm:p-6 rounded-2xl bg-white border border-gray-100 hover:border-primary-200 hover:shadow-glass transition-all duration-300 cursor-default"
             >
               <div className="text-3xl mb-4">{f.icon}</div>
               <h3 className="text-base font-semibold text-gray-900 mb-1.5 group-hover:text-primary-700 transition-colors">
@@ -191,13 +191,13 @@ export default function LandingPage() {
       </section>
 
       {/* ── Bottom CTA ── */}
-      <section className="max-w-3xl mx-auto px-6 pb-24">
+      <section className="max-w-3xl mx-auto px-4 sm:px-6 pb-16 sm:pb-24">
         <motion.div
           initial={{ opacity: 0, scale: 0.97 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="relative bg-gradient-hero rounded-3xl p-10 sm:p-14 text-center text-white overflow-hidden"
+          className="relative bg-gradient-hero rounded-2xl sm:rounded-3xl p-8 sm:p-14 text-center text-white overflow-hidden"
         >
           <div className="absolute inset-0 opacity-10">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full translate-x-1/3 -translate-y-1/3" />
